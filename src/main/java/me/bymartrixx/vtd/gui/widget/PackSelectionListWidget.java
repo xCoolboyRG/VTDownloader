@@ -59,7 +59,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
     private static final int SCROLLBAR_LEFT_MARGIN = 4;
     private static final int TEXT_MARGIN = 2;
     private static final int ICON_MARGIN = 1;
-
     private static final int SELECTION_OUTLINE_COLOR = 0xFF808080;
 
     private final Map<Category, List<AbstractEntry>> entryCache = new HashMap<>();
@@ -69,7 +68,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
 
     private final List<OrderedText> errorLines;
     private final MultilineText errorText;
-
     private final PackSelectionHelper selectionHelper;
 
     public PackSelectionListWidget(MinecraftClient client, VTDownloadScreen screen, int width, int height, int y,
@@ -82,13 +80,11 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
         this.errorLines = Util.getMultilineTextLines(client.textRenderer, ERROR_TEXT, 8, (int) (y / 1.5));
         this.errorText = Util.createMultilineText(client.textRenderer, ERROR_TEXT, 8, (int) (y / 1.5));
 
-        // In 1.21.10+, children() returns an unmodifiable collection
         this.replaceEntries(this.getPackEntries(category));
     }
 
     public void setCategory(Category category) {
         this.category = category;
-
         this.setFocusedChild(null);
         this.replaceEntries(this.getPackEntries(category));
         this.method_44382(0.0);
@@ -119,7 +115,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
         }
 
         for (Pack pack : category.getPacks()) {
-            // Experimental packs aren't shown in the web page, at least for now
             if (pack.isExperimental()) {
                 continue;
             }
@@ -138,7 +133,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
         }
 
         this.entryCache.put(category, entries);
-
         return entries;
     }
 
@@ -168,7 +162,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
         if (entry instanceof PackEntry packEntry) {
             return this.selectionHelper.getSelectionColor(packEntry.getPack());
         }
-
         return PackSelectionHelper.DEFAULT_SELECTION_COLOR;
     }
 
@@ -216,42 +209,15 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
         return (this.width / 5) * 2;
     }
 
-    // private void moveFocus(MoveDirection direction) {
-    //     int offset = direction == MoveDirection.UP ? -1 : 1;
-    //     if (!this.children().isEmpty()) {
-    //         int start = this.children().get(0) instanceof WarningEntry ? 1 : 0;
-    //         AbstractEntry current = this.getFocused();
-    //         int currentIndex = current != null ? this.children().indexOf(current) : -1;
-    //
-    //         int index = MathHelper.clamp(currentIndex + offset, start, this.getEntryCount() - 1);
-    //         if (index != currentIndex) {
-    //             AbstractEntry entry = this.getEntry(index);
-    //             this.setFocused(entry);
-    //             this.ensureVisible(entry);
-    //         }
-    //     }
-    // }
-
     @Override
     public boolean isFocused() {
         return this.screen.getFocused() == this;
     }
 
-    // @Override
-    // public void setFocused(@Nullable Element focused) {
-    //     super.setFocused(focused);
-    //
-    //     // Set focused element as list when focusing an entry
-    //     if (focused != null && !this.isFocused()) {
-    //         this.screen.setFocused(this);
-    //     }
-    // }
-
     // region input callbacks
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean bl) {
         if (event.method_74245() == GLFW.GLFW_MOUSE_BUTTON_1 && this.children().isEmpty()) {
-            // Handle clicks when the error is shown
             int x = this.getCenterX();
             int textWidth = this.errorText.getMaxWidth();
             int startX = x - textWidth / 2;
@@ -278,13 +244,11 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                             if (confirmed) {
                                 net.minecraft.util.Util.getOperatingSystem().open(uri);
                             }
-
                             client.setScreen(this.screen);
                         }, uri.toString(), false));
                     } else {
                         net.minecraft.util.Util.getOperatingSystem().open(uri);
                     }
-
                     return true;
                 }
             }
@@ -296,14 +260,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
     @Override
     public boolean keyPressed(KeyEvent event) {
         if (this.isFocused()) {
-            // if (keyCode == GLFW.GLFW_KEY_DOWN) {
-            //     this.moveFocus(MoveDirection.DOWN);
-            //     return true;
-            // } else if (keyCode == GLFW.GLFW_KEY_UP) {
-            //     this.moveFocus(MoveDirection.UP);
-            //     return true;
-            // }
-
             if (event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) {
                 AbstractEntry focusedEntry = this.getFocused();
                 if (focusedEntry instanceof PackEntry entry) {
@@ -311,15 +267,8 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                 }
             }
         }
-
         return false;
     }
-
-    // @Override
-    // public boolean changeFocus(boolean lookForwards) {
-    //     return !this.isFocused();
-    // }
-
     // endregion
 
     // region render
@@ -340,12 +289,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             int outlineColor = focused ? 0xFFFFFFFF : SELECTION_OUTLINE_COLOR;
             int color = this.getEntrySelectionColor(entry);
             this.drawEntrySelectionHighlight(graphics, entry, outlineColor, color);
-        /*} else if (focused) { // TODO: reimplement keyboard nav
-            int x = entry.getX();
-            int y = entry.getY();
-            int width = entry.getWidth();
-            int height = entry.getHeight();
-            RenderUtil.drawOutline(graphics, x - 1, y - 1, width - 2, height - 2, 1, 0xFFFFFFFF);*/
         }
 
         entry.method_25343(graphics, mouseX, mouseY, Objects.equals(this.getHoveredEntry(), entry), delta);
@@ -362,14 +305,12 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
 
     private void renderError(GuiGraphics graphics) {
         TextRenderer textRenderer = this.client.textRenderer;
-
         int x = this.getCenterX();
         int y = this.getCenterY();
         int lineHeight = getLineHeight(textRenderer);
-
         int textY = y - lineHeight * 2;
-        MultilineText.C_wvhjqegh alignment = MultilineText.C_wvhjqegh.CENTER;
-        this.errorText.method_73212(graphics, alignment, x, textY, lineHeight, false, 0xFFFFFFFF);
+        // Исправлено: C_wvhjqegh + method_73212 → drawCenterWithShadow
+        this.errorText.drawCenterWithShadow(graphics, x, textY, lineHeight, 0xFFFFFFFF);
     }
 
     public void renderDebugInfo(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -414,18 +355,14 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
     public static class PackEntry extends AbstractEntry {
         private final Pack pack;
         private final Text name;
-
         private final PackSelectionListWidget widget;
         private final Identifier icon;
         private boolean downloadedIcon = false;
         private boolean iconExists;
-
         private NativeImage downloadedIconImage;
-
         private List<Text> description;
         private MultilineText shortDescription;
         private int lastDescriptionWidth;
-
         protected PackSelectionData selectionData;
 
         public PackEntry(PackSelectionListWidget widget, Pack pack) {
@@ -433,11 +370,8 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             this.pack = pack;
             this.name = Text.of(pack.getName()).copy().formatted(Formatting.BOLD);
             this.widget = widget;
-
             this.icon = VTDMod.getIconId(pack);
-
             this.iconExists = ((TextureManagerAccess) this.client.getTextureManager()).vtdownloader$hasTexture(this.icon);
-
             this.selectionData = new PackSelectionData(this.pack, widget.category);
         }
 
@@ -449,9 +383,7 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             if (this.description != null) {
                 return this.description;
             }
-
             this.description = this.getDescriptionLines(maxWidth);
-
             return this.description;
         }
 
@@ -460,28 +392,22 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                 return this.shortDescription;
             }
 
-            List<Text> fullDescriptionLines =  this.getDescriptionLines(maxWidth);
+            List<Text> fullDescriptionLines = this.getDescriptionLines(maxWidth);
             List<Text> lines = new ArrayList<>();
             if (!fullDescriptionLines.isEmpty()) {
                 lines.add(fullDescriptionLines.getFirst());
-
-                // truncate the second line at a punctuation
                 if (fullDescriptionLines.size() > 1) {
                     Text secondLine = fullDescriptionLines.get(1);
                     int lineWidth = textRenderer.getWidth(secondLine);
-
-                    // If there are more than 2 lines, or if the second line doesn't fit, truncate at last punctuation
                     if (fullDescriptionLines.size() > 2 || lineWidth > maxWidth) {
                         secondLine = truncateAtLastPunctuation(secondLine, maxWidth, textRenderer);
                     }
-
                     lines.add(secondLine);
                 }
             }
 
             this.shortDescription = this.createMultilineText(lines);
             this.lastDescriptionWidth = maxWidth;
-
             return this.shortDescription;
         }
 
@@ -499,7 +425,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             }
 
             if (this.downloadedIcon || this.iconExists) return;
-
             this.downloadedIcon = true;
 
             VTDMod.downloadIcon(this.pack).whenCompleteAsync((icon, throwable) -> {
@@ -507,7 +432,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                     VTDMod.LOGGER.error("Failed to download icon for pack {}", this.pack.getName(), throwable);
                     return;
                 }
-
                 if (icon != null) {
                     this.downloadedIconImage = icon;
                 } else {
@@ -527,7 +451,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                 this.widget.toggleSelection(this);
                 return true;
             }
-
             return false;
         }
 
@@ -539,28 +462,21 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             int height = this.getHeight();
             int width = this.getWidth();
             TextRenderer textRenderer = this.client.textRenderer;
-            // Keep icon size fixed based on ITEM_HEIGHT, not entryHeight (reduced to 75%)
-            int iconSize = ((ITEM_HEIGHT - ICON_MARGIN * 2) * 3)/4;
 
-            // Calculate equal spacing: top, left, bottom between icon and border
-            // Border is at x, so we want equal spacing on all sides
-            int spacing = (height - iconSize) / 2; // Equal top and bottom spacing
-            int iconX = x + spacing; // Left spacing equals top/bottom spacing
-            int iconY = y + spacing; // Top spacing
+            int iconSize = ((ITEM_HEIGHT - ICON_MARGIN * 2) * 3) / 4;
+            int spacing = (height - iconSize) / 2;
+            int iconX = x + spacing;
+            int iconY = y + spacing;
 
-            // Text area starts after icon with spacing on both sides
             int textAreaX = x + iconSize + spacing * 2;
             int textAreaWidth = width - (iconSize + spacing * 2);
 
-            // Calculate vertical centering (title + max 2 description lines)
             int lineHeight = getLineHeight(textRenderer);
-            int totalTextHeight = lineHeight * 2; // title + description (max 2 lines)
+            int totalTextHeight = lineHeight * 2;
             int textStartY = y + (height - totalTextHeight) / 2;
-            int centerX = textAreaX + textAreaWidth / 2; // center in text area
+            int centerX = textAreaX + textAreaWidth / 2;
 
             graphics.drawCenteredShadowedText(textRenderer, this.name, centerX, textStartY, 0xFFFFFFFF);
-
-            // Use textAreaWidth for description to ensure proper wrapping when menu is open
             this.renderDescription(graphics, centerX, textStartY + lineHeight, textAreaWidth);
             if (!DISABLE_ICONS) this.renderIcon(graphics, iconX, iconY, iconSize);
         }
@@ -568,15 +484,14 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
         private void renderDescription(GuiGraphics graphics, int x, int y, int width) {
             TextRenderer textRenderer = this.client.textRenderer;
             MultilineText description = this.getShortDescription(width - TEXT_MARGIN, textRenderer);
-            MultilineText.C_wvhjqegh alignment = MultilineText.C_wvhjqegh.CENTER;
-            description.method_73212(graphics, alignment, x, y, textRenderer.fontHeight, false, 0xFFFFFFFF);
+            // Исправлено: C_wvhjqegh + method_73212 → drawCenterWithShadow
+            description.drawCenterWithShadow(graphics, x, y, textRenderer.fontHeight, 0xFFFFFFFF);
         }
 
         private static Text truncateAtLastPunctuation(Text originalText, int maxWidth, TextRenderer textRenderer) {
             String text = originalText.getString();
             int lastPunctIndex = -1;
 
-            // Find the last "." or "," that fits within maxWidth
             for (int i = text.length() - 1; i >= 0; i--) {
                 char c = text.charAt(i);
                 if (c == '.' || c == ',') {
@@ -589,13 +504,11 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                 }
             }
 
-            // If we found a punctuation mark, truncate there
             if (lastPunctIndex > 0) {
                 String truncated = text.substring(0, lastPunctIndex);
                 return Text.of(truncated).copy().setStyle(originalText.getStyle());
             }
 
-            // If no punctuation found, truncate to fit maxWidth
             for (int i = text.length(); i > 0; i--) {
                 String candidate = text.substring(0, i);
                 Text candidateText = Text.of(candidate).copy().setStyle(originalText.getStyle());
@@ -604,15 +517,14 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                 }
             }
 
-            // Fallback: return empty or first character
             return Text.empty();
         }
 
         private void renderIcon(GuiGraphics graphics, int x, int y, int size) {
             downloadIcon();
             if (!this.iconExists) return;
-
-            graphics.drawTexture(RenderPipelines.GUI_TEXTURED, this.icon, x, y, 0.0F, 0.0F, size, size, size, size);
+            // Исправлено: u, v как float — новая сигнатура
+            graphics.drawTexture(RenderPipelines.GUI_TEXTURED, this.icon, x, y, 0.0f, 0.0f, size, size, size, size);
         }
         // endregion
 
@@ -625,14 +537,12 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
     public static class WarningEntry extends AbstractEntry {
         private final Category.Warning warning;
         private final int color;
-
         private List<Text> textLines;
         private MultilineText text;
 
         public WarningEntry(PackSelectionListWidget widget, Category.Warning warning) {
             super(widget);
             this.warning = warning;
-
             this.color = Util.parseColor(warning.getColor());
         }
 
@@ -644,7 +554,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             if (this.textLines != null) {
                 return this.textLines;
             }
-
             this.textLines = this.getWrappedText(maxWidth);
             return this.textLines;
         }
@@ -653,7 +562,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             if (this.text != null) {
                 return this.text;
             }
-
             this.text = this.createMultilineText(this.getWrappedText(maxWidth));
             return this.text;
         }
@@ -671,7 +579,8 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             int width = this.getWidth();
             int height = this.getHeight();
 
-            this.renderBackground(graphics, x + WARNING_BG_MARGIN, y + WARNING_BG_MARGIN, width - WARNING_BG_MARGIN * 2, height - WARNING_BG_MARGIN * 2);
+            this.renderBackground(graphics, x + WARNING_BG_MARGIN, y + WARNING_BG_MARGIN,
+                    width - WARNING_BG_MARGIN * 2, height - WARNING_BG_MARGIN * 2);
 
             int textWidth = width - WARNING_MARGIN * 2;
             int textHeight = height - WARNING_BG_MARGIN * 2;
@@ -684,10 +593,10 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
 
         private void renderText(GuiGraphics graphics, int x, int y, int width, int height) {
             MultilineText text = this.getText(width);
-            MultilineText.C_wvhjqegh alignment = MultilineText.C_wvhjqegh.CENTER;
             int lineHeight = this.client.textRenderer.fontHeight;
             int textY = y + height / 2 - text.count() * lineHeight / 2;
-            text.method_73212(graphics, alignment, x, textY, lineHeight, false, 0xFFFFFFFF);
+            // Исправлено: C_wvhjqegh + method_73212 → drawCenterWithShadow
+            text.drawCenterWithShadow(graphics, x, textY, lineHeight, 0xFFFFFFFF);
         }
         // endregion
 
@@ -749,7 +658,6 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
                 this.playDownSound(this.client.getSoundManager());
                 return true;
             }
-
             return false;
         }
 
@@ -760,9 +668,14 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
             int width = this.getWidth();
             int height = this.getHeight();
 
-            graphics.drawSprite(RenderPipelines.GUI_TEXTURED, TEXTURE,
-                    x + BUTTON_HORIZONTAL_PADDING, y + (height - BUTTON_HEIGHT) / 2, width - BUTTON_HORIZONTAL_PADDING * 2, BUTTON_HEIGHT);
-            graphics.drawCenteredShadowedText(this.client.textRenderer, this.name, x + width / 2, y + (height - this.client.textRenderer.fontHeight) / 2, 0xFFFFFFFF);
+            // Исправлено: drawSprite с Identifier → drawTexture с новой сигнатурой
+            graphics.drawTexture(RenderPipelines.GUI_TEXTURED, TEXTURE,
+                    x + BUTTON_HORIZONTAL_PADDING, y + (height - BUTTON_HEIGHT) / 2,
+                    0, 0,
+                    width - BUTTON_HORIZONTAL_PADDING * 2, BUTTON_HEIGHT,
+                    200, 20);
+            graphics.drawCenteredShadowedText(this.client.textRenderer, this.name,
+                    x + width / 2, y + (height - this.client.textRenderer.fontHeight) / 2, 0xFFFFFFFF);
         }
     }
 
@@ -787,15 +700,12 @@ public class PackSelectionListWidget extends EntryListWidget<PackSelectionListWi
 
         protected abstract List<Text> getTooltipText(int width);
 
-        // region baseEntryRender
         protected boolean renderTooltip(GuiGraphics graphics, int mouseX, int mouseY, int width) {
             if (this.isMouseOver(mouseX, mouseY)) {
                 graphics.deferDrawingTooltip(this.client.textRenderer, this.getTooltipText(width), mouseX, mouseY);
                 return true;
             }
-
             return false;
         }
-        // endregion
     }
 }
