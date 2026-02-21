@@ -19,16 +19,6 @@ import net.minecraft.resource.pack.PackProfile;
 import net.minecraft.resource.pack.ResourcePack;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
-import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.message.BasicNameValuePair;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -39,9 +29,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -91,9 +88,10 @@ public class VTDMod implements ClientModInitializer {
 
     private static HttpClient getClient() {
         if (httpClient == null) {
-            httpClient = HttpClients.createDefault();
+            httpClient = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .build();
         }
-
         return httpClient;
     }
 
@@ -103,18 +101,42 @@ public class VTDMod implements ClientModInitializer {
     }
 
     @Contract("_ -> new")
-    private static HttpGet createHttpGet(String resource) {
-        return new HttpGet(getResourceUri(resource));
+    private static HttpRequest createHttpGet(String resource) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(getResourceUri(resource)))
+                .header("User-Agent", "VTDownloader v" + VERSION)
+                .GET()
+                .build();
+    }
+
+    private static String buildFormBody(List<String[]> params) {
+        StringBuilder sb = new StringBuilder();
+        for (String[] param : params) {
+            if (sb.length() > 0) sb.append("&");
+            sb.append(URLEncoder.encode(param[0], StandardCharsets.UTF_8));
+            sb.append("=");
+            sb.append(URLEncoder.encode(param[1], StandardCharsets.UTF_8));
+        }
+        return sb.toString();
     }
 
     @Contract("_ -> new")
-    private static HttpPost createHttpPost(String resource) {
-        return new HttpPost(getResourceUri(resource));
+    private static HttpRequest createHttpPost(String resource, String formBody) {
+        return HttpRequest.newBuilder()
+                .uri(URI.create(getResourceUri(resource)))
+                .header("User-Agent", "VTDownloader v" + VERSION)
+                .header("Content-Type", "application/x-www-form-urlencoded")
+                .POST(HttpRequest.BodyPublishers.ofString(formBody))
+                .build();
     }
 
-    public static <R extends HttpRequestBase> HttpResponse executeRequest(R request) throws IOException {
-        request.addHeader("User-Agent", "VTDownloader v" + VERSION);
-        return getClient().execute(request);
+    public static HttpResponse<InputStream> executeRequest(HttpRequest request) throws IOException {
+        try {
+            return getClient().send(request, HttpResponse.BodyHandlers.ofInputStream());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Request interrupted", e);
+        }
     }
 
     public static void loadRpCategories() {
@@ -131,8 +153,8 @@ public class VTDMod implements ClientModInitializer {
             }
 
             if (categories == null) {
-                HttpResponse response = executeRequest(createHttpGet("/assets/resources/json/" + VT_VERSION + "/rpcategories.json"));
-                try (InputStream stream = new BufferedInputStream(response.getEntity().getContent())) {
+                HttpResponse<InputStream> response = executeRequest(createHttpGet("/assets/resources/json/" + VT_VERSION + "/rpcategories.json"));
+                try (InputStream stream = new BufferedInputStream(response.body())) {
                     categories = GSON.fromJson(new InputStreamReader(stream), RpCategories.class);
                 }
             }
@@ -156,25 +178,22 @@ public class VTDMod implements ClientModInitializer {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                HttpPost request = createHttpPost("/assets/server/zipresourcepacks.php");
-
-                List<NameValuePair> params = new ArrayList<>();
-                params.add(new BasicNameValuePair("version", VT_VERSION));
-                params.add(new BasicNameValuePair("packs", GSON.toJson(requestData)));
-                request.setEntity(new UrlEncodedFormEntity(params));
-
+                List<String[]> params = new ArrayList<>();
+                params.add(new String[]{"version", VT_VERSION});
+                params.add(new String[]{"packs", GSON.toJson(requestData)});
+                HttpRequest request = createHttpPost("/assets/server/zipresourcepacks.php", buildFormBody(params));
                 return executeRequest(request);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to execute pack zipping request", e);
             }
         }, DOWNLOAD_EXECUTOR).thenApplyAsync(response -> {
             progressCallback.accept(0.1F);
-            int code = response.getStatusLine().getStatusCode();
+            int code = response.statusCode();
             if (code / 100 != 2) {
                 throw new IllegalStateException("Pack zipping request returned status code " + code);
             }
 
-            try (InputStream stream = new BufferedInputStream(response.getEntity().getContent())) {
+            try (InputStream stream = new BufferedInputStream(response.body())) {
                 return GSON.fromJson(new InputStreamReader(stream), DownloadPackResponseData.class);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read pack zipping response", e);
@@ -184,8 +203,12 @@ public class VTDMod implements ClientModInitializer {
             String fileName = userFileName != null ? userFileName + ".zip" : data.getFileName();
 
             try {
-                HttpGet request = createHttpGet(data.getLink());
-                request.setConfig(RequestConfig.custom().setConnectTimeout(4000).build());
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(getResourceUri(data.getLink())))
+                        .header("User-Agent", "VTDownloader v" + VERSION)
+                        .timeout(Duration.ofSeconds(4))
+                        .GET()
+                        .build();
 
                 return new Pair<>(fileName, executeRequest(request));
             } catch (IOException e) {
@@ -194,14 +217,14 @@ public class VTDMod implements ClientModInitializer {
         }, DOWNLOAD_EXECUTOR).thenApplyAsync(data -> {
             progressCallback.accept(0.4F);
 
-            HttpResponse response = data.getRight();
-            int code = response.getStatusLine().getStatusCode();
+            HttpResponse<InputStream> response = data.getRight();
+            int code = response.statusCode();
             if (code / 100 != 2) {
                 throw new IllegalStateException("Pack download request returned status code " + code);
             }
 
             String fileName = data.getLeft().trim();
-            try (InputStream stream = new BufferedInputStream(response.getEntity().getContent())) {
+            try (InputStream stream = new BufferedInputStream(response.body())) {
                 return Files.copy(stream, downloadPath.resolve(fileName), StandardCopyOption.REPLACE_EXISTING) > 0;
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read pack download response", e);
@@ -212,23 +235,20 @@ public class VTDMod implements ClientModInitializer {
     public static CompletableFuture<String> executeShare(SharePackRequestData requestData) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                HttpPost request = createHttpPost("/assets/server/sharecode.php");
-
-                List<NameValuePair> params = Collections.singletonList(
-                        new BasicNameValuePair("data", GSON.toJson(requestData)));
-                request.setEntity(new UrlEncodedFormEntity(params));
-
+                List<String[]> params = Collections.singletonList(
+                        new String[]{"data", GSON.toJson(requestData)});
+                HttpRequest request = createHttpPost("/assets/server/sharecode.php", buildFormBody(params));
                 return executeRequest(request);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to execute pack share request", e);
             }
         }).thenApplyAsync(response -> {
-            int code = response.getStatusLine().getStatusCode();
+            int code = response.statusCode();
             if (code / 100 != 2) {
                 throw new IllegalStateException("Pack share request returned status code " + code);
             }
 
-            try (InputStream stream = new BufferedInputStream(response.getEntity().getContent())) {
+            try (InputStream stream = new BufferedInputStream(response.body())) {
                 return GSON.fromJson(new InputStreamReader(stream), SharePackResponseData.class);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read pack share response", e);
@@ -244,18 +264,19 @@ public class VTDMod implements ClientModInitializer {
     public static CompletableFuture<NativeImage> downloadIcon(Pack pack) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return executeRequest(createHttpPost(
-                        String.format("/assets/resources/icons/resourcepacks/%s/%s.png", VT_VERSION, pack.getIcon())));
+                HttpRequest request = createHttpGet(
+                        String.format("/assets/resources/icons/resourcepacks/%s/%s.png", VT_VERSION, pack.getIcon()));
+                return executeRequest(request);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to execute icon download request", e);
             }
         }, DOWNLOAD_EXECUTOR).thenApplyAsync(response -> {
-            int code = response.getStatusLine().getStatusCode();
+            int code = response.statusCode();
             if (code / 100 != 2) {
                 throw new IllegalStateException("Icon download request returned status code " + code);
             }
 
-            try (InputStream stream = response.getEntity().getContent()) {
+            try (InputStream stream = response.body()) {
                 return NativeImage.read(stream);
             } catch (IOException e) {
                 throw new RuntimeException("Failed to read icon download response", e);
@@ -272,7 +293,7 @@ public class VTDMod implements ClientModInitializer {
         return CompletableFuture.supplyAsync(() -> {
             try (ResourcePack resourcePack = profile.createPack()) {
                 ResourceIoSupplier<InputStream> fileStream = resourcePack.openRoot(Constants.SELECTED_PACKS_FILE);
-                try (InputStream stream = fileStream != null ? fileStream.get() : null){
+                try (InputStream stream = fileStream != null ? fileStream.get() : null) {
                     if (stream != null) {
                         return readSelectedPacks(new BufferedReader(new InputStreamReader(stream)));
                     } else {
