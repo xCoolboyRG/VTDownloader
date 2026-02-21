@@ -16,7 +16,6 @@ public abstract class AbstractScreenPopup implements Drawable {
     protected final int centerY;
     private int width;
     private int height;
-
     private boolean show;
     private float shownTime;
     private float fadeTime;
@@ -114,10 +113,12 @@ public abstract class AbstractScreenPopup implements Drawable {
     protected void renderBackground(GuiGraphics graphics) {
         int alpha = this.getFadeAlpha();
         graphics.fill(this.getLeft() - 1, this.getTop() - 1, this.getRight() + 1, this.getBottom() + 1, alpha << 24, alpha << 24);
-
         int color = ArgbHelper.pack(alpha, 64, 64, 64);
-        graphics.drawTexture(RenderPipelines.GUI_TEXTURED, Screen.MENU_BACKGROUND,
-                this.getLeft(), this.getTop(), 0.0F, 0.0F, this.width, this.height, BACKGROUND_TEXTURE_SIZE, BACKGROUND_TEXTURE_SIZE, color);
+        // Исправлено: blit вместо drawTexture, color передаётся как отдельный аргумент
+        graphics.blit(RenderPipelines.GUI_TEXTURED, Screen.MENU_BACKGROUND,
+                this.getLeft(), this.getTop(), 0.0F, 0.0F,
+                this.width, this.height,
+                BACKGROUND_TEXTURE_SIZE, BACKGROUND_TEXTURE_SIZE, color);
     }
 
     protected abstract void renderContent(GuiGraphics graphics, int mouseX, int mouseY, float delta);
