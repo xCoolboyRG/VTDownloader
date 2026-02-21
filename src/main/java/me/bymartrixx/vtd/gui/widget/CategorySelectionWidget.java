@@ -180,16 +180,6 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
         }
     }
 
-    // @Override
-    // public boolean changeFocus(boolean lookForwards) {
-    //     boolean focused = super.changeFocus(lookForwards);
-    //     if (focused) {
-    //         this.ensureVisible((CategoryButtonWidget) this.getFocused());
-    //     }
-    //
-    //     return focused;
-    // }
-
     // region input callbacks
     @Override
     public boolean mouseClicked(MouseButtonEvent event, boolean bl) {
@@ -210,7 +200,6 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
     @Override
     public boolean mouseDragged(MouseButtonEvent event, double deltaX, double deltaY) {
         if (event.method_74245() == GLFW.GLFW_MOUSE_BUTTON_1 && this.scrolling) {
-            // Dragging scrollbar
             if (event.x() < this.left) {
                 this.setScrollAmount(0);
             } else if (event.y() > this.right) {
@@ -232,7 +221,6 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
         return false;
     }
 
-    // Only called if isMouseOver is true; from Screen#mouseScrolled
     @Override
     public boolean mouseScrolled(double mouseX, double mouseY, double horizontalAmount, double verticalAmount) {
         double amount = Math.abs(horizontalAmount) > Math.abs(verticalAmount) ? horizontalAmount : verticalAmount;
@@ -240,7 +228,6 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
         return true;
     }
 
-    // Needed to allow scrolling
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
         return mouseX >= this.left && mouseX < this.right &&
@@ -259,12 +246,13 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
         this.renderScrollbar(graphics);
     }
 
-    // @see EntryListWidget#drawBackground
     private void renderListBackground(GuiGraphics graphics) {
         Identifier texture = MinecraftClient.getInstance().world == null ? BACKGROUND_TEXTURE : INWORLD_BACKGROUND_TEXTURE;
+        // Новая сигнатура: drawTexture(pipeline, id, x, y, u, v, width, height, texWidth, texHeight)
         graphics.drawTexture(RenderPipelines.GUI_TEXTURED, texture,
-                this.left, this.top, this.right + (int) this.getScrollAmount(), this.bottom,
-                this.width, this.height, BACKGROUND_TEXTURE_SIZE, BACKGROUND_TEXTURE_SIZE);
+                this.left, this.top, 0.0f, 0.0f,
+                this.width, this.height,
+                BACKGROUND_TEXTURE_SIZE, BACKGROUND_TEXTURE_SIZE);
     }
 
     private void renderCategories(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
@@ -273,7 +261,6 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
             int left = getButtonLeft(i);
             int right = getButtonRight(i);
 
-            // Render only if the button is at least partially visible (else it'd be out of the screen)
             if (right > this.left && left < this.right) {
                 button.render(graphics, left, this.top + TOP_BOTTOM_PADDING, mouseX, mouseY, delta);
             }
@@ -283,10 +270,11 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
     private void renderSeparators(GuiGraphics graphics) {
         Matrix3x2fStack matrices = graphics.getMatrices();
         matrices.pushMatrix();
-        matrices.rotate((float) Math.PI / 2.0f); // 90 degrees
+        matrices.rotate((float) Math.PI / 2.0f);
 
         Identifier leftSeparator = MinecraftClient.getInstance().world == null ? Screen.FOOTER_SEPARATOR : Screen.INWORLD_FOOTER_SEPARATOR;
         Identifier rightSeparator = MinecraftClient.getInstance().world == null ? Screen.HEADER_SEPARATOR : Screen.INWORLD_HEADER_SEPARATOR;
+        // Новая сигнатура: drawTexture(pipeline, id, x, y, u, v, width, height, texWidth, texHeight)
         graphics.drawTexture(RenderPipelines.GUI_TEXTURED, leftSeparator, this.top, -this.left, 0.0f, 0.0f, this.height, 2, 32, 2);
         graphics.drawTexture(RenderPipelines.GUI_TEXTURED, rightSeparator, this.top, -this.right - 2, 0.0f, 0.0f, this.height, 2, 32, 2);
 
@@ -309,9 +297,9 @@ public class CategorySelectionWidget extends AbstractParentElement implements Dr
                 x = startX;
             }
 
-            graphics.fill(startX, startY, endX, endY, 0xFF000000); // Slider area
-            graphics.fill(x, startY, x + size, endY, 0xFF808080); // Scroll bar
-            graphics.fill(x, startY, x + size - 1, endY - 1, 0xFFC0C0C0); // Scroll bar highlight
+            graphics.fill(startX, startY, endX, endY, 0xFF000000);
+            graphics.fill(x, startY, x + size, endY, 0xFF808080);
+            graphics.fill(x, startY, x + size - 1, endY - 1, 0xFFC0C0C0);
         }
     }
 
