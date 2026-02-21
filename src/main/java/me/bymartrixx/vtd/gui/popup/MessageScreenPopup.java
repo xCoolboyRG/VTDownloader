@@ -67,8 +67,7 @@ public class MessageScreenPopup extends AbstractScreenPopup implements Element, 
         graphics.drawCenteredShadowedText(textRenderer, this.title, this.centerX, this.getTop() + TITLE_MARGIN, color);
 
         int y = this.getTop() + TITLE_MARGIN * 2 + textRenderer.fontHeight;
-        MultilineText.C_wvhjqegh alignment = MultilineText.C_wvhjqegh.CENTER;
-        this.message.method_73212(graphics, alignment, this.centerX, y, textRenderer.fontHeight, false, color);
+        this.message.drawCenterWithShadow(graphics, this.centerX, y, textRenderer.fontHeight, color);
     }
 
     @Override
