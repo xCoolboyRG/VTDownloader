@@ -23,8 +23,6 @@ import org.lwjgl.glfw.GLFW;
 
 // Doesn't extend ButtonWidget to allow dynamic positioning
 public class CategoryButtonWidget implements Element, Selectable {
-    private static final int TEXTURE_HEIGHT = 20;
-    private static final int TEXTURE_V_OFFSET = 46;
     private static final ClickableWidgetStateTextures TEXTURES = new ClickableWidgetStateTextures(
             Identifier.ofDefault("widget/button"), Identifier.ofDefault("widget/button_disabled"), Identifier.ofDefault("widget/button_highlighted")
     );
@@ -55,7 +53,8 @@ public class CategoryButtonWidget implements Element, Selectable {
         MinecraftClient client = MinecraftClient.getInstance();
         TextRenderer textRenderer = client.textRenderer;
 
-        graphics.drawSprite(RenderPipelines.GUI_TEXTURED, TEXTURES.getTexture(!this.selected, this.isHoveredOrFocused()), x, y, this.width, this.height);
+        Identifier texture = TEXTURES.getTexture(!this.selected, this.isHoveredOrFocused());
+        graphics.drawTexture(RenderPipelines.GUI_TEXTURED, texture, x, y, 0, 0, this.width, this.height, 200, 20);
 
         int textColor = this.selected ? 0xFFA0A0A0 : 0xFFFFFFFF;
         graphics.drawCenteredShadowedText(textRenderer, this.text, x + this.width / 2, y + (this.height - 8) / 2, textColor);
@@ -127,12 +126,6 @@ public class CategoryButtonWidget implements Element, Selectable {
             }
         }
     }
-
-    // @Override
-    // public boolean changeFocus(boolean lookForwards) {
-    //     this.focused = !this.focused;
-    //     return this.focused;
-    // }
 
     private boolean isHoveredOrFocused() {
         return this.hovered || this.focused;
