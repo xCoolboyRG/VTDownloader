@@ -1,5 +1,6 @@
 package me.bymartrixx.vtd.gui.widget;
 
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.widget.button.ButtonWidget;
 import net.minecraft.text.Text;
 
@@ -24,5 +25,10 @@ public class MutableMessageButtonWidget extends ButtonWidget {
     @Override
     public Text getMessage() {
         return this.currentMessage;
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
+        super.renderWidget(graphics, mouseX, mouseY, delta);
     }
 }
