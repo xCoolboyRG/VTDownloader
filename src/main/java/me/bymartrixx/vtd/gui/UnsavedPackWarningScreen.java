@@ -1,5 +1,6 @@
 package me.bymartrixx.vtd.gui;
 
+import me.bymartrixx.vtd.util.Util;
 import net.minecraft.client.font.MultilineText;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screen.Screen;
@@ -7,7 +8,6 @@ import net.minecraft.client.gui.widget.button.ButtonWidget;
 import net.minecraft.text.CommonTexts;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import me.bymartrixx.vtd.util.Util;
 
 public class UnsavedPackWarningScreen extends Screen {
     private static final Text HEADER = Text.translatable("vtd.unsavedPackWarning.header").formatted(Formatting.BOLD);
@@ -39,7 +39,6 @@ public class UnsavedPackWarningScreen extends Screen {
                         .position(startX, buttonY)
                         .size(buttonWidth, buttonHeight)
                         .build());
-
         this.addDrawableSelectableElement(ButtonWidget.builder(CommonTexts.BACK, button -> this.closeScreen())
                 .position(startX + buttonWidth + spacing, buttonY)
                 .size(buttonWidth, buttonHeight)
@@ -54,11 +53,9 @@ public class UnsavedPackWarningScreen extends Screen {
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float delta) {
         super.render(graphics, mouseX, mouseY, delta);
-
         graphics.drawCenteredShadowedText(this.textRenderer, HEADER, this.width / 2, this.height / 2 - 50, 0xFFFFFFFF);
 
         int y = this.height / 2 - 20;
-        MultilineText.C_wvhjqegh alignment = MultilineText.C_wvhjqegh.CENTER;
-        this.message.method_73212(graphics, alignment, this.width / 2, y, this.textRenderer.fontHeight, false, 0xFFFFFFFF);
+        this.message.drawCenterWithShadow(graphics, this.width / 2, y, this.textRenderer.fontHeight, 0xFFFFFFFF);
     }
 }
