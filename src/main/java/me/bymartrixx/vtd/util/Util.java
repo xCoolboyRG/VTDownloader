@@ -2,7 +2,6 @@ package me.bymartrixx.vtd.util;
 
 import me.bymartrixx.vtd.VTDMod;
 import net.minecraft.client.font.MultilineText;
-import net.minecraft.client.font.TextHandler;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.MutableText;
@@ -52,9 +51,8 @@ public class Util {
     }
 
     public static String removeHtmlTags(String text) {
-        // Remove html tags
         return StringUtils.normalizeSpace(text.replaceAll("(?!<br>)<[^>]*>", " "))
-                .replaceAll("<br>", "\n"); // Replace <br> after normalizing to keep new lines
+                .replaceAll("<br>", "\n");
     }
 
     public static Text urlText(String url) {
@@ -75,8 +73,21 @@ public class Util {
         int startX = centerX - width / 2;
         int endX = startX + width;
 
-        return mouseX >= startX && mouseX < endX ?
-                textRenderer.getTextHandler().getStyleAt(text, (int) mouseX - startX) : null;
+        if (mouseX < startX || mouseX >= endX) {
+            return null;
+        }
+
+        // В 1.21.11 getStyleAt убран из TextHandler, используем visitFormatted
+        int offset = (int) mouseX - startX;
+        Style[] result = {null};
+        textRenderer.getTextHandler().visitFormatted(text, Style.EMPTY, (index, style, codePoint) -> {
+            if (index <= offset) {
+                result[0] = style;
+                return true;
+            }
+            return false;
+        });
+        return result[0];
     }
 
     @Nullable
@@ -85,8 +96,21 @@ public class Util {
         int startX = centerX - width / 2;
         int endX = startX + width;
 
-        return mouseX >= startX && mouseX < endX ?
-                textRenderer.getTextHandler().getStyleAt(text, (int) mouseX - startX) : null;
+        if (mouseX < startX || mouseX >= endX) {
+            return null;
+        }
+
+        // В 1.21.11 getStyleAt убран из TextHandler, используем visitFormatted
+        int offset = (int) mouseX - startX;
+        Style[] result = {null};
+        text.accept((index, style, codePoint) -> {
+            if (index <= offset) {
+                result[0] = style;
+                return true;
+            }
+            return false;
+        });
+        return result[0];
     }
 
     public static List<OrderedText> getMultilineTextLines(TextRenderer textRenderer, Text text, int maxLines, int width) {
@@ -108,8 +132,7 @@ public class Util {
     }
 
     public static List<Text> wrapText(TextRenderer textRenderer, String text, int maxWidth) {
-        TextHandler textHandler = textRenderer.getTextHandler();
-        List<StringVisitable> visitableLines = textHandler.wrapLines(text, maxWidth, Style.EMPTY);
+        List<StringVisitable> visitableLines = textRenderer.getTextHandler().wrapLines(text, maxWidth, Style.EMPTY);
         return visitableLines.stream().map(StringVisitable::getString).map(Text::of).toList();
     }
 }
