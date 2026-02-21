@@ -44,8 +44,6 @@ dependencies {
 	modCompileOnly(libs.recursive.resources) {
 		exclude group: "com.terraformersmc", module: "modmenu"
 	}
-
-	compileOnly "com.terraformersmc:modmenu:17.0.0-beta.2"
 }
 
 processResources {
